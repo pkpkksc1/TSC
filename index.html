@@ -3,127 +3,172 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TSC 글 뷰어</title>
+<title>TSC 4</title>
+
 <style>
-  body{margin:0;background:#fff;color:#000;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif;}
-  .topbar{
-    display:flex; justify-content:space-between; align-items:center;
-    padding:14px; border-bottom:2px solid #000; gap:10px; flex-wrap:wrap;
-  }
-  .brand{border:2px solid #000; padding:8px 14px; font-weight:900; min-width:80px; text-align:center;}
-  .btns{display:flex; gap:10px; flex-wrap:wrap;}
-  button{
-    border:2px solid #000; background:#fff; color:#000;
-    padding:10px 18px; font-weight:900; cursor:pointer;
-  }
-  .wrap{max-width:980px;margin:0 auto;padding:18px;}
-  .status{font-weight:900; font-size:14px; margin:10px 0 14px; text-align:right;}
-  .box{
-    border:2px solid #000;
-    min-height:60vh;
-    padding:18px;
-    white-space:pre-wrap;
-    line-height:1.6;
-    font-size:18px;
-  }
-  @media (max-width:600px){
-    .box{font-size:16px; min-height:65vh;}
-    button{padding:10px 14px;}
-  }
+body{
+  margin:0;
+  background:#fff;
+  color:#000;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans KR",sans-serif;
+}
+
+/* 상단 */
+.topbar{
+  text-align:center;
+  font-weight:900;
+  font-size:28px;
+  padding:18px 0;
+  border-bottom:2px solid #000;
+}
+
+/* 상태 */
+.status{
+  text-align:center;
+  font-weight:900;
+  margin:10px 0;
+}
+
+/* 메인 영역 */
+.viewer{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:75vh;
+  position:relative;
+}
+
+/* 이전/다음 큰 버튼 */
+.sideBtn{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:20%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
+  font-weight:900;
+  cursor:pointer;
+  user-select:none;
+}
+
+.sideBtn:hover{
+  background:#f2f2f2;
+}
+
+#prev{
+  left:0;
+  border-right:2px solid #000;
+}
+
+#next{
+  right:0;
+  border-left:2px solid #000;
+}
+
+/* 중앙 텍스트 박스 */
+.box{
+  width:60%;
+  max-width:900px;
+  border:2px solid #000;
+  padding:24px;
+  white-space:pre-wrap;
+  line-height:1.6;
+  font-size:18px;
+  min-height:60vh;
+}
+
+/* 모바일 */
+@media (max-width:800px){
+  .box{width:80%; font-size:16px;}
+  .sideBtn{width:25%; font-size:22px;}
+}
 </style>
 </head>
+
 <body>
-  <div class="topbar">
-    <div class="brand">TSC</div>
-    <div class="btns">
-      <button id="reload">불러오기</button>
-      <button id="prev">이전</button>
-      <button id="next">다음</button>
-    </div>
+
+<div class="topbar">TSC 4</div>
+<div class="status" id="status">불러오는 중...</div>
+
+<div class="viewer">
+  <div id="prev" class="sideBtn">이전</div>
+
+  <div id="content" class="box">
+    data.txt 불러오는 중...
   </div>
 
-  <div class="wrap">
-    <div class="status" id="status">불러오는 중...</div>
-    <div class="box" id="content">data.txt 불러오는 중...</div>
-  </div>
+  <div id="next" class="sideBtn">다음</div>
+</div>
 
 <script>
-  const FILE_URL = "data.txt";
+const FILE_URL = "data.txt";
 
-  let pages = [];
-  let idx = 0;
+let pages = [];
+let idx = 0;
 
-  function normalize(text){
-    return text.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+function normalize(text){
+  return text.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+}
+
+function splitPages(text){
+  // 하이픈 3개 이상이면 구분자로 인식
+  const raw = text.split(/\n\s*-{3,}\s*\n/g);
+  return raw.map(s => s.trim()).filter(Boolean);
+}
+
+function render(){
+  const st = document.getElementById("status");
+  const box = document.getElementById("content");
+
+  if(!pages.length){
+    st.textContent = "데이터 없음";
+    box.textContent = "data.txt 확인";
+    return;
   }
 
-  function splitPages(text){
-    // 구분자: 줄 단독으로 --- (앞뒤 공백 허용)
-    const raw = text.split(/\n\s*-{3,}\s*\n/g);
-    return raw.map(s => s.trim()).filter(Boolean);
-  }
+  if(idx < 0) idx = 0;
+  if(idx >= pages.length) idx = pages.length - 1;
 
-  function render(){
-    const st = document.getElementById("status");
-    const box = document.getElementById("content");
+  st.textContent = `${idx+1} / ${pages.length}`;
+  box.textContent = pages[idx];
+}
 
-    if(!pages.length){
-      st.textContent = "데이터 없음 (data.txt 확인)";
-      box.textContent = "data.txt에 내용을 넣고, 페이지 사이에 줄 단독으로 --- 를 넣어줘!";
-      return;
-    }
+function next(){
+  if(!pages.length) return;
+  idx = (idx + 1) % pages.length;
+  render();
+}
 
-    if(idx < 0) idx = 0;
-    if(idx >= pages.length) idx = pages.length - 1;
+function prev(){
+  if(!pages.length) return;
+  idx = (idx - 1 + pages.length) % pages.length;
+  render();
+}
 
-    st.textContent = `${idx+1} / ${pages.length}`;
-    box.textContent = pages[idx];
-  }
-
-  function next(){
-    if(!pages.length) return;
-    idx = (idx + 1) % pages.length;
+async function loadFile(){
+  try{
+    const res = await fetch(FILE_URL + "?ts=" + Date.now(), {cache:"no-store"});
+    const text = normalize(await res.text());
+    pages = splitPages(text);
+    idx = 0;
     render();
+  }catch(e){
+    document.getElementById("status").textContent = "파일 못 불러옴";
   }
+}
 
-  function prev(){
-    if(!pages.length) return;
-    idx = (idx - 1 + pages.length) % pages.length;
-    render();
-  }
+document.getElementById("next").addEventListener("click", next);
+document.getElementById("prev").addEventListener("click", prev);
 
-  async function loadFile(){
-    // ✅ 캐시 완전 방지: 매번 다른 URL로 fetch
-    const url = `${FILE_URL}?ts=${Date.now()}`;
+window.addEventListener("keydown", (e)=>{
+  if(e.key === "ArrowRight") next();
+  if(e.key === "ArrowLeft") prev();
+});
 
-    document.getElementById("status").textContent = "불러오는 중...";
-    try{
-      const res = await fetch(url, { cache: "no-store" });
-      if(!res.ok) throw new Error("fetch failed");
-      const text = normalize(await res.text());
-      pages = splitPages(text);
-      idx = 0;
-      render();
-    }catch(e){
-      document.getElementById("status").textContent = "파일 못 불러옴";
-      document.getElementById("content").textContent =
-        "data.txt 파일이 리포지토리 루트에 있는지, 파일명이 정확한지 확인해줘!";
-    }
-  }
-
-  document.getElementById("next").addEventListener("click", next);
-  document.getElementById("prev").addEventListener("click", prev);
-  document.getElementById("reload").addEventListener("click", loadFile);
-
-  window.addEventListener("keydown", (e)=>{
-    if(e.key === "ArrowRight") next();
-    if(e.key === "ArrowLeft") prev();
-    if(e.key.toLowerCase() === "r") loadFile();
-  });
-
-  // 시작 시 1회 로드
-  loadFile();
+loadFile();
 </script>
+
 </body>
 </html>
-
